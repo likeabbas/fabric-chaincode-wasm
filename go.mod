@@ -10,7 +10,7 @@ require (
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.3 // indirect
 	github.com/onsi/ginkgo v1.14.0
 	github.com/onsi/gomega v1.10.1
-	github.com/wapc/wapc-go v0.5.5
+	github.com/wapc/wapc-go v0.5.4
 	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc // indirect
 	golang.org/x/sys v0.0.0-20200817155316-9781c653f443 // indirect
 	golang.org/x/text v0.3.3 // indirect
