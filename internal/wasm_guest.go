@@ -103,7 +103,7 @@ func (wg *WasmGuest) InvokeWasmOperation(operation string, payload []byte) (resu
 // Close closes the WasmGuest, rendering it unusable for invoking further operations
 func (wg *WasmGuest) Close() {
 	log.Printf("[host] Closing waPC Pool")
-	wg.wapcPool.Close(context.Background())
+	wg.wapcPool.Close(wg.context)
 
 	log.Printf("[host] Closing waPC Module")
 	g := *wg.wapcModule
