@@ -8,14 +8,17 @@ package internal
 import (
 	"context"
 	"fmt"
+	"github.com/wapc/wapc-go/engines/wazero"
 	"io/ioutil"
 	"log"
+	"os"
 	"time"
 
 	"github.com/wapc/wapc-go"
 )
 
 // WasmGuestInvoker is the interface that wraps the InvokeWasmOperation method.
+//
 //counterfeiter:generate -o fakes/wapc_guest_invoker.go --fake-name WasmGuestInvoker . WasmGuestInvoker
 type WasmGuestInvoker interface {
 	InvokeWasmOperation(operation string, payload []byte) ([]byte, error)
@@ -26,6 +29,8 @@ type WasmGuestInvoker interface {
 type WasmGuest struct {
 	wapcModule *wapc.Module
 	wapcPool   *wapc.Pool
+	wapcEngine *wapc.Engine
+	context    context.Context
 }
 
 func consoleLog(msg string) {
@@ -35,23 +40,33 @@ func consoleLog(msg string) {
 // NewWasmGuest returns a new WasmGuest capable of invoking Wasm operations
 func NewWasmGuest(wasmFile string, proxy *FabricProxy) (*WasmGuest, error) {
 	wg := &WasmGuest{}
+	ctx, _ := context.WithCancel(context.Background())
+	engine := wazero.Engine()
 
 	wasmBytes, err := ioutil.ReadFile(wasmFile)
 	if err != nil {
 		return nil, err
 	}
 
-	module, err := wapc.New(consoleLog, wasmBytes, proxy.FabricCall)
+	module, err := engine.New(ctx, proxy.FabricCall, wasmBytes, &wapc.ModuleConfig{
+		Logger: wapc.PrintlnLogger,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	})
+
 	if err != nil {
 		return nil, err
 	}
-	wg.wapcModule = module
 
-	pool, err := wapc.NewPool(module, 10)
+	wg.wapcModule = &module
+
+	pool, err := wapc.NewPool(context.Background(), module, 10)
 	if err != nil {
 		return nil, err
 	}
 	wg.wapcPool = pool
+	wg.wapcEngine = &engine
+	wg.context = ctx
 
 	return wg, nil
 }
@@ -88,8 +103,9 @@ func (wg *WasmGuest) InvokeWasmOperation(operation string, payload []byte) (resu
 // Close closes the WasmGuest, rendering it unusable for invoking further operations
 func (wg *WasmGuest) Close() {
 	log.Printf("[host] Closing waPC Pool")
-	wg.wapcPool.Close()
+	wg.wapcPool.Close(context.Background())
 
 	log.Printf("[host] Closing waPC Module")
-	wg.wapcModule.Close()
+	g := *wg.wapcModule
+	g.Close(wg.context)
 }

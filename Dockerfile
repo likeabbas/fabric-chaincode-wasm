@@ -1,7 +1,7 @@
 # Copyright the Hyperledger Fabric contributors. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-ARG GO_VER=1.13.8
+ARG GO_VER=1.19.2
 
 # Alpine image doesn't work for wasmer :(
 FROM golang:${GO_VER}
